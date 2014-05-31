@@ -104,7 +104,10 @@ static const uint8_t PROGMEM device_descriptor[] = {
 	1					// bNumConfigurations
 };
 
-static const uint8_t PROGMEM gamepad_hid_report_desc[] = { 
+static const uint8_t PROGMEM gamepad_hid_report_desc[] =
+#include "usb_gamepad_report_descriptor.inc"
+#if 0
+ { 
 	0x05, 0x01,        // USAGE_PAGE (Generic Desktop)
 	0x09, 0x05,        // USAGE (Gamepad)
 	0xa1, 0x01,        // COLLECTION (Application)
@@ -130,7 +133,7 @@ static const uint8_t PROGMEM gamepad_hid_report_desc[] = {
         0x81, 0x03,        //   INPUT (Constant,Var,Abs)
 	0xc0               // END_COLLECTION
 };
-
+#endif
 
 #define CONFIG1_DESC_SIZE        (9+9+9+7)
 #define GAMEPAD_HID_DESC_OFFSET (9+9)
@@ -225,10 +228,7 @@ static const struct descriptor_list_struct {
 // zero when we are not configured, non-zero when enumerated
 static volatile uint8_t usb_configuration = 0;
 
-uint8_t joystick_x = 128;
-uint8_t joystick_y = 128;
-
-uint8_t gamepad_buttons = 0;
+uint16_t gamepad_buttons = 0;
 
 static uint8_t gamepad_idle_config = 0;
 
@@ -263,9 +263,7 @@ uint8_t usb_configured(void) {
   return usb_configuration;
 }
 
-int8_t usb_gamepad_action(uint8_t x, uint8_t y, uint8_t buttons) {
-  joystick_x = x;
-  joystick_y = y;
+int8_t usb_gamepad_action(uint16_t buttons) {
   gamepad_buttons = buttons; 
 
   return usb_gamepad_send();
@@ -292,9 +290,8 @@ int8_t usb_gamepad_send(void) {
 		cli();
 		UENUM = GAMEPAD_ENDPOINT;
 	}
-	UEDATX = joystick_x;
-	UEDATX = joystick_y;
-        UEDATX = gamepad_buttons;
+        UEDATX = (uint8_t)(gamepad_buttons);
+        UEDATX = (uint8_t)(gamepad_buttons >> 8);
 	UEINTX = 0x3A;
 	SREG = intr_state;
 	return 0;
@@ -480,9 +477,8 @@ ISR(USB_COM_vect)
 			if (bmRequestType == 0xA1) {
 				if (bRequest == HID_GET_REPORT) {
 					usb_wait_in_ready();
-                                        UEDATX = joystick_x;
-                                        UEDATX = joystick_y;
-                                        UEDATX = gamepad_buttons;
+                                        UEDATX = (uint8_t)gamepad_buttons;
+                                        UEDATX = (uint8_t)(gamepad_buttons >> 8);
 					usb_send_in();
 					return;
 				}

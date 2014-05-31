@@ -47,8 +47,9 @@ int main (void) {
     _delay_ms(1000);
     LED_OFF;
     while (1) {
-        uint8_t b = ~PINB & PORT_B_PINS;
-        uint8_t d = ~PIND & PORT_D_PINS;
+        uint16_t b = (uint16_t)(~PINB & PORT_B_PINS);
+        uint16_t d = (uint16_t)(~PIND & PORT_D_PINS);
+        usb_gamepad_action(b | (d << 8));
         if (b || d) {
             LED_ON;
         }

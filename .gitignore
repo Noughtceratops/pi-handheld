@@ -1,8 +1,11 @@
 /reference/
 .dep/
-.eep
-.elf
-.lss
-.lst
-.map
-.o
+*.eep
+*.elf
+*.lss
+*.lst
+*.map
+*.o
+*.o.d
+*.hex
+*.sym
