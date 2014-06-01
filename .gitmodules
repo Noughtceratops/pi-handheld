@@ -1,0 +1,6 @@
+[submodule "third-party/pocketsnes-libretro"]
+	path = third-party/pocketsnes-libretro
+	url = git://github.com/libretro/pocketsnes-libretro
+[submodule "third-party/RetroArch"]
+	path = third-party/RetroArch
+	url = git://github.com/Themaister/RetroArch
