@@ -32,7 +32,7 @@
  **************************************************************************/
 
 // You can change these to give your code its own name.
-#define STR_MANUFACTURER	L"Martins Grunskis"
+#define STR_MANUFACTURER	L"Brandon Dillon"
 #define STR_PRODUCT		L"Gamepad"
 
 

@@ -9,35 +9,20 @@
 #define CPU_PRESCALE(n) (CLKPR = 0x80, CLKPR = (n))
 
 // Port B
-#define DPAD_UP (1 << 0)
-#define DPAD_DOWN (1 << 1)
-#define DPAD_LEFT (1 << 2)
-#define DPAD_RIGHT (1 << 3)
-#define BUTTON_A (1 << 4)
-#define BUTTON_B (1 << 5)
-#define BUTTON_X (1 << 6)
-#define BUTTON_Y (1 << 7)
+#define CLOCK_PIN 0
+#define LATCH_PIN 1
+#define DATA_PIN 2
 
-#define PORT_B_PINS (DPAD_UP | DPAD_DOWN | DPAD_LEFT | DPAD_RIGHT | BUTTON_A | BUTTON_B | BUTTON_X | BUTTON_Y)
-
-// Port D
-#define BUTTON_L (1 << 0)
-#define BUTTON_R (1 << 1)
-#define BUTTON_SELECT (1 << 2)
-#define BUTTON_START (1 << 3) 
-
-#define PORT_D_PINS (BUTTON_L | BUTTON_R | BUTTON_SELECT | BUTTON_START)
+#define SAMPLE_FRAMES_PER_SECOND 30
+#define PULSES_PER_SECOND (16 * SAMPLE_FRAMES_PER_SECOND)
 
 int main (void) {
     CPU_PRESCALE(0);
     LED_CONFIG;
     LED_ON;
 
-    // Configure all of our pins as inputs with pullup resistors
-    DDRD = 0x00;
-    DDRB = 0x00;
-    PORTB = PORT_B_PINS;
-    PORTD = PORT_D_PINS;
+    DDRB = (1 << CLOCK_PIN) | (1 << LATCH_PIN);
+    PORTB = 0; // (1 << CLOCK_PIN);
 
     usb_init();
     while (!usb_configured()) {
@@ -46,11 +31,33 @@ int main (void) {
 
     _delay_ms(1000);
     LED_OFF;
+    int light = 1;
     while (1) {
-        uint16_t b = (uint16_t)(~PINB & PORT_B_PINS);
-        uint16_t d = (uint16_t)(~PIND & PORT_D_PINS);
-        usb_gamepad_action(b | (d << 8));
-        if (b || d) {
+	// Pulse the latch to load up the shift register
+	PORTB |= (1 << LATCH_PIN);
+        _delay_us(12);
+	PORTB &= ~(1 << LATCH_PIN);
+
+	uint16_t bits = 0;
+	if ((PINB & (1 << DATA_PIN)) == 0) {
+            bits |= 1;
+	}
+        _delay_us(6);
+
+        for (int bit = 1; bit < 16; ++bit) {    
+	    PORTB |= (1 << CLOCK_PIN);
+	    _delay_us(6);
+	    if ((PINB & (1 << DATA_PIN)) == 0) {
+                bits |= 1 << bit;
+	    }
+	    PORTB &= ~(1 << CLOCK_PIN);
+	    _delay_us(6);
+	};
+	
+        usb_gamepad_action(bits);
+	_delay_ms(16);
+	light = !light;
+	if (bits) {
             LED_ON;
         }
         else {
